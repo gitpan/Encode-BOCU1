@@ -1,14 +1,20 @@
 package Encode::BOCU1;
+
+use 5.008;
 use strict;
+use warnings;
+use Carp;
+
 use base qw(Encode::Encoding);
 
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 
 __PACKAGE__->Define('bocu1');
 
 use Encode::Alias;
-define_alias( qr/^bocu.1$/i => '"bocu1"'); # BOCU-1, Bocu_1, bocu.1, ...
+define_alias( qr/^bocu.1$/i => '"bocu1"');
 define_alias( qr/^bocu$/i => '"bocu1"');
+
 
 #
 # encode / decode
@@ -16,410 +22,219 @@ define_alias( qr/^bocu$/i => '"bocu1"');
 sub encode($$;$) {
     my ($obj, $str, $check) = @_;
     my $octet = utf8_to_bocu1($str);
-    $_[1] = '' if $check; # $this is what in-place edit means
+
+    $_[1] = '' if $check;
     return $octet;
 }
-sub decode ($$;$) {
+sub decode($$;$) {
     my ($obj, $octet, $check) = @_;
     my $str = bocu1_to_utf8($octet);
+
     $_[1] = '' if $check;
     return $str;
 }
 
 #
-# Subroutines
-#
-# based on the sample C code available on http://www.unicode.org/notes/tn6/
-# US Patent 6737994 "Binary-Ordered Compression For Unicode" by IBM
+# subroutines
 #
 my @bocu1_trail_to_byte = (
-#   0     1     2     3     4     5     6     7
-    0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x10, 0x11,
-#   8     9     a     b     c     d     e     f
-    0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19,
-#   10    11    12    13
-    0x1c, 0x1d, 0x1e, 0x1f );
+#   0 - 19 (0x0 - 0x13)
+          0x01, 0x02, 0x03, 0x04, 0x05, 0x06,
+    0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19,             0x1c, 0x1d, 0x1e, 0x1f,
+#   20 - 242 (0x14 - 0xf2)
+          0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x28, 0x29, 0x2a, 0x2b, 0x2c, 0x2d, 0x2e, 0x2f,
+    0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x3a, 0x3b, 0x3c, 0x3d, 0x3e, 0x3f,
+    0x40, 0x41, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47, 0x48, 0x49, 0x4a, 0x4b, 0x4c, 0x4d, 0x4e, 0x4f,
+    0x50, 0x51, 0x52, 0x53, 0x54, 0x55, 0x56, 0x57, 0x58, 0x59, 0x5a, 0x5b, 0x5c, 0x5d, 0x5e, 0x5f,
+    0x60, 0x61, 0x62, 0x63, 0x64, 0x65, 0x66, 0x67, 0x68, 0x69, 0x6a, 0x6b, 0x6c, 0x6d, 0x6e, 0x6f,
+    0x70, 0x71, 0x72, 0x73, 0x74, 0x75, 0x76, 0x77, 0x78, 0x79, 0x7a, 0x7b, 0x7c, 0x7d, 0x7e, 0x7f,
+    0x80, 0x81, 0x82, 0x83, 0x84, 0x85, 0x86, 0x87, 0x88, 0x89, 0x8a, 0x8b, 0x8c, 0x8d, 0x8e, 0x8f,
+    0x90, 0x91, 0x92, 0x93, 0x94, 0x95, 0x96, 0x97, 0x98, 0x99, 0x9a, 0x9b, 0x9c, 0x9d, 0x9e, 0x9f,
+    0xa0, 0xa1, 0xa2, 0xa3, 0xa4, 0xa5, 0xa6, 0xa7, 0xa8, 0xa9, 0xaa, 0xab, 0xac, 0xad, 0xae, 0xaf,
+    0xb0, 0xb1, 0xb2, 0xb3, 0xb4, 0xb5, 0xb6, 0xb7, 0xb8, 0xb9, 0xba, 0xbb, 0xbc, 0xbd, 0xbe, 0xbf,
+    0xc0, 0xc1, 0xc2, 0xc3, 0xc4, 0xc5, 0xc6, 0xc7, 0xc8, 0xc9, 0xca, 0xcb, 0xcc, 0xcd, 0xce, 0xcf,
+    0xd0, 0xd1, 0xd2, 0xd3, 0xd4, 0xd5, 0xd6, 0xd7, 0xd8, 0xd9, 0xda, 0xdb, 0xdc, 0xdd, 0xde, 0xdf,
+    0xe0, 0xe1, 0xe2, 0xe3, 0xe4, 0xe5, 0xe6, 0xe7, 0xe8, 0xe9, 0xea, 0xeb, 0xec, 0xed, 0xee, 0xef,
+    0xf0, 0xf1, 0xf2, 0xf3, 0xf4, 0xf5, 0xf6, 0xf7, 0xf8, 0xf9, 0xfa, 0xfb, 0xfc, 0xfd, 0xfe, 0xff );
+
 my @bocu1_byte_to_trail = (
-#   0     1     2     3     4     5     6     7
-    -1,   0x00, 0x01, 0x02, 0x03, 0x04, 0x05, -1,
-#   8     9     a     b     c     d     e     f
-    -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,
-#   10    11    12    13    14    15    16    17
-    0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d,
-#   18    19    1a    1b    1c    1d    1e    1f
-    0x0e, 0x0f, -1,   -1,   0x10, 0x11, 0x12, 0x13,
-#   20
-    -1 );
-
-# Compute the next "previous" value for differencing from the current code point.
-#
-# @param $c : current code point, 0..0x10ffff
-# @return "previous code point" state value
-sub bocu1_prev {
-    my $c = shift;
-
-    if (0x3040 <= $c && $c <= 0x309f) {
-        # Hiragana is not 128-aligned
-        0x3070;
-    } elsif (0x4e00 <= $c && $c <= 0x9fa5) {
-        # CJI Unihan
-        0x7711; # 0x4e00 - -10513
-    } elsif (0xac00 <= $c && $c <= 0xd7a3) {
-        # Korean Hangul
-        0xc1d1; # (ac00 + d7a3)/2
-    } else {
-        # mostly small scripts
-        ($c & ~0x7f) + 0x40;
-    }
-}
-
-# Encode a difference -0x10ffff..0x10ffff in 1..4 bytes and return a BOCU-1 string
-#
-# The encoding favors small absolute differences with short encodings
-# to compress runs of same-script characters.
-
-# @param $diff : difference value -0x10ffff..0x10ffff
-# @return $bocu1str : BOCU-1 string
-sub pack_diff {
-    my $diff = shift; ## -1114111 (=-0x10ffff) .. 1114111 (=0x10ffff)
-    my ($lead,$count);
-
-    if ($diff >= -64) {
-        # mostly positive differences, and single-byte negative ones
-        if ($diff <= 63) { # -64 .. 63
-            # single byte
-            return chr(0x90 + $diff); # 0x50 .. 0xcf
-        } elsif ($diff <= 10512) { # 64 .. 10512
-            # two bytes
-            $diff -= 64; # 0 .. 10448 (= 43*243-1)
-            $lead = 0xd0; # 0xd0 .. 0xfa
-            $count = 1;
-        } elsif ($diff <= 187659) { # 10513 .. 187659
-            # three bytes
-            $diff -= 10513; # 0 .. 177146 (= 3*243*243-1)
-            $lead = 0xfb; # 0xfb .. 0xfd
-            $count = 2;
-        } else { # if ($diff <= 14536566) { # 187660 .. (14536566)
-#            # four bytes
-#            $diff -= 187660; # 0 .. 14348906 (1*243*243*243-1)
-#            $lead = 0xfe; # 0xfe
-#            $count = 3;
-        }
-    } else { # $diff < -64
-        # two- and four-byte negative differences
-        if ($diff >= -10513) { # -10513 .. -65
-            # two bytes
-            $diff -= -64; # -43*243 .. -1
-            $lead = 0x50; # 0x25 .. 0x4f
-            $count = 1;
-        } elsif ($diff >= -187660) { # -187660 .. -10514
-            # three bytes
-            $diff -= -10513; # -3*243*243 .. -1
-            $lead = 0x25; # 0x22 .. 0x24
-            $count = 2;
-        } else { # if ($diff >= -14536567) { # (-14536567) .. -187661
-            # four bytes
-            $diff -= -187660; # -1*243*243*243 .. -1
-            $lead = 0x22; # 0x21
-            $count = 3;
-        }
-    }
-
-    # calculate trail bytes
-    my $bocu1_str = '';
-    for (my $i=$count; $i>0; $i--) {
-        my $trail = $diff % 243;
-        $diff = ($diff - $trail) / 243;
-        
-        my $byte = $trail >= 20 ? $trail + 13 : $bocu1_trail_to_byte[$trail];
-        $bocu1_str = chr($byte) . $bocu1_str;
-    }
-    chr($lead + $diff) . $bocu1_str;
-}
-
-#
-# BOCU-1 encoder function.
-#
-# @param \$prev : reference to the integer that holds
-#        the "previous code point" state;
-#        the initial value should be 0 which
-#        encode_bocu1() will set to the actual BOCU-1 initial state value
-# @param $c : the code point to encode
-# @return $bocu1str : BOCU-1 string
-#         or undef if an error occurs
-#
-# @see pack_diff()
-#
-sub encode_bocu1 {
-    my ($ref_prev,$c) = @_;
-    if (!defined($ref_prev) || $c < 0 || $c > 0x10ffff) {
-        # ERROR : illegal argument
-        return undef;
-    }
-
-    my $prev = $$ref_prev;
-    if ($prev == 0) {
-        # lenient handling of initial value 0
-        $prev = $$ref_prev = 0x40;
-    }
-
-    if ($c <= 0x20) {
-        #
-        # ISO C0 control & space:
-        # Encode directly for MIME compatibility,
-        # and reset state except for space, to not disrupt compression.
-        #
-        if ($c != 0x20) {
-            $$ref_prev = 0x40;
-        }
-        return chr($c);
-    }
-
-    #
-    # all other Unicode code points $c==U+0021..U+10ffff
-    # are encoded with the difference $c - $prev
-    #
-    # a new prev is computed from $c,
-    # placed in the middle of a 0x80-block (for most small scripts) or
-    # in the middle of the Unihan and Hangul blocks
-    # to statistically minimize the following difference
-    #
-    $$ref_prev = &bocu1_prev($c);
-    &pack_diff($c - $prev);
-}
-
-#
-# Function for BOCU-1 decoder; handles multi-byte lead bytes.
-#
-# @param \%rx : reference to the decoder state structure { prev, count, diff }.
-# @param $b : lead byte;
-#          0x21 <= $b <  0x50
-#       or 0xd0 <= $b <= 0xfe
-# @return -1 (state change only)
-#
-# @see decode_bocu1()
-#
-sub decode_bocu1_lead_byte {
-    my ($ref_rx, $b) = @_;
-    my ($c,$count);
-
-    if ($b >= 0x50) {
-        # positive difference
-        ## since d0 <= $b ...
-        if ($b < 0xfb) { # d0 .. fa
-            # two bytes
-            $c = ($b - 0xd0) *243 + 63 + 1; # ( .. 42)*243 + 64  # .. 10270+r
-            $count = 1;
-        } elsif ($b < 0xfe) { # fb fc fd
-            # three bytes
-            $c = ($b - 0xfb) *243*243 + 10512 + 1; # (0..2)*243*243 + 10513  # 10513 .. 128611+r
-            $count = 2;
-        } else { # fe
-            # four bytes
-            $c = 187659 + 1; # 3 *243*243 * 10512 + 1  # 187660 .. 
-            $count = 3;
-        }
-    } else {
-        # negative difference
-        if ($b >= 0x25) { # 25 .. 4f
-            # two bytes
-            $c = ($b - 0x50) * 243 - 64; # (-43 .. -1)*243-64 = -10513 .. -307
-            $count = 1;
-        } elsif ($b > 0x21) { # 22 23 24
-            # three bytes
-            $c = ($b - 0x25) *243*243 - 10513; # (-3 .. -1)*243*243 - 10513 = -187660 .. -69562
-            $count = 2;
-        } else {
-            # four bytes
-            $c = -243*243*243 - 187660; # -1*243*243*243 - 187660 = -14536567
-            $count = 3;
-        }
-    }
-
-    # set the state for decoding the trail byte(s)
-    $$ref_rx{diff} = $c;
-    $$ref_rx{count} = $count;
-
-    -1;
-}
-
-#
-# Function for BOCU-1 decoder; handles multi-byte trail bytes.
-#
-# @param \%rx : reference to the decoder state structure
-# @param $b : trail byte
-# @return result value, same as decodeBocu1
-#
-# @see decode_bocu1()
-#
-sub decode_bocu1_trail_byte {
-    my ($ref_rx, $b) = @_;
-    my ($t, $c, $count);
-
-    if ($b <= 0x20) {
-        # skip some C0 controls and make the trail byte range contiguous
-        $t = $bocu1_byte_to_trail[$b];
-        if ($t < 0) {
-            # illegal trail byte value
-            $$ref_rx{prev} = 0x40;
-            $$ref_rx{count} = 0;
-            return -99;
-        }
-    } else {
-        $t = $b - 13; # BOCU1_TRAIL_BYTE_OFFSET;
-    }
-
-    # add trail byte into difference and decrement count
-    $c = $$ref_rx{diff};
-    $count = $$ref_rx{count};
-
-    if ($count == 1) {
-        # final trail byte, deliver a code point
-        $c = $$ref_rx{prev} + $c + $t;
-        if (0 <= $c && $c <= 0x10ffff) {
-            # valid code point result
-            $$ref_rx{prev} = &bocu1_prev($c);
-            $$ref_rx{count} = 0;
-            return $c;
-        } else {
-            # illegal code point result
-            $$ref_rx{prev} = 0x40;
-            $$ref_rx{count} = 0;
-            return -99;
-        }
-    }
-
-    # intermediate trail byte
-    if ($count == 2) {
-        $$ref_rx{diff} = $c + $t * 243;
-    } else { # if ($count == 3) {
-        $$ref_rx{diff} = $c + $t * 243 * 243;
-    }
-    $$ref_rx{count} = $count - 1;
-    -1;
-}
-
-#
-# BOCU-1 decoder function.
-#
-# @param \%rx : reference to the decoder state structure;
-#        the initial values should be 0 which
-#        decodeBocu1 will set to actual initial state values
-# @param $b : an input byte
-# @return
-#      0..0x10ffff for a result code point
-#      -1 if only the state changed without code point output
-#     <-1 if an error occurs
-#
-sub decode_bocu1 {
-    my ($ref_rx, $b) = @_;
-    my ($prev, $c, $count);
-
-    return -99 unless defined($ref_rx); ## ERROR: illegal argument
-
-    $prev = $$ref_rx{prev};
-    if ($prev == 0) {
-        # lenient handling of initial 0 values
-        $prev = $$ref_rx{prev} = 0x40;
-        $count = $$ref_rx{count} = 0;
-    } else {
-        $count = $$ref_rx{count};
-    }
-
-    if ($count == 0) {
-        # byte in lead position
-        if ($b <= 0x20) {
-            #
-            # Direct-encoded C0 control code or space.
-            # Reset prev for C0 control codes but not for space.
-            #
-            if ($b != 0x20) {
-                $$ref_rx{prev} = 0x40;
-            }
-            return $b;
-        }
-
-        #
-        # $b is a difference lead byte.
-        #
-        # Return a code point directly from a single-byte difference.
-        #
-        # For multi-byte difference lead bytes, set the decoder state
-        # with the partial difference value from the lead byte and
-        # with the number of trail bytes.
-        #
-        # For four-byte differences, the signedness also affects the
-        # first trail byte, which has special handling farther below.
-        #
-        if ($b >= 0x50 && $b < 0xd0) { # 50 .. cf
-            # single-byte difference
-            $c = $prev + ($b - 0x90);
-            $$ref_rx{prev} = &bocu1_prev($c);
-            return $c;
-        } elsif ($b == 0xff) { # BOCU1_RESET
-            # only reset the state, no code point
-            $$ref_rx{prev} = 0x40;
-            return -1;
-        } else {
-            return decode_bocu1_lead_byte($ref_rx, $b);
-        }
-    } else {
-        # trail byte in any position
-        return decode_bocu1_trail_byte($ref_rx, $b);
-    }
-}
-
-#
-# Decode a BOCU-1 byte sequence to a UCS-4 codepoint stream.
-#
-# @param : $bocu1str : input BOCU-1 string
-# @return : @codepoints : UCS-4 codepoint stream
-#
-sub bocu1_to_codepoints {
-    my $bocu1str = shift;
-    my @chars = unpack("C*", $bocu1str);
-
-    my @codepoints = ();
-    my %rx = ( prev => 0, count => 0, diff => 0 );
-
-    for (my $i=0; $i<=$#chars; $i++) {
-        my $c = &decode_bocu1(\%rx, $chars[$i]);
-        if ($c < -1) {
-            ## ERROR: "error: readString detects encoding error at string index %ld\n", i
-            return -1;
-        }
-        if ($c >= 0) {
-            push(@codepoints, $c)
-        }
-    }
-    return @codepoints;
-}
-
-###
-sub utf8_to_bocu1 {
-    my $utf8str = shift;
-    my $bocu1str = '';
-
-    my @codepoints = unpack("U*", $utf8str);
-    my $prev = 0;
-    for (my $i=0; $i<=$#codepoints; $i++) {
-        my $codepoint = $codepoints[$i];
-        next if $codepoint == 0xfeff && $i == 0;
-
-        $bocu1str .= &encode_bocu1(\$prev, $codepoint);
-    }
-    $bocu1str;
-}
+#   0x00 - 0x20
+    -1,   0x00, 0x01, 0x02, 0x03, 0x04, 0x05, -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,
+    0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, -1,   -1,   0x10, 0x11, 0x12, 0x13,
+    -1,
+#   0x21 - 0xff
+          0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f, 0x20, 0x21, 0x22,
+    0x23, 0x24, 0x25, 0x26, 0x27, 0x28, 0x29, 0x2a, 0x2b, 0x2c, 0x2d, 0x2e, 0x2f, 0x30, 0x31, 0x32,
+    0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x3a, 0x3b, 0x3c, 0x3d, 0x3e, 0x3f, 0x40, 0x41, 0x42,
+    0x43, 0x44, 0x45, 0x46, 0x47, 0x48, 0x49, 0x4a, 0x4b, 0x4c, 0x4d, 0x4e, 0x4f, 0x50, 0x51, 0x52,
+    0x53, 0x54, 0x55, 0x56, 0x57, 0x58, 0x59, 0x5a, 0x5b, 0x5c, 0x5d, 0x5e, 0x5f, 0x60, 0x61, 0x62,
+    0x63, 0x64, 0x65, 0x66, 0x67, 0x68, 0x69, 0x6a, 0x6b, 0x6c, 0x6d, 0x6e, 0x6f, 0x70, 0x71, 0x72,
+    0x73, 0x74, 0x75, 0x76, 0x77, 0x78, 0x79, 0x7a, 0x7b, 0x7c, 0x7d, 0x7e, 0x7f, 0x80, 0x81, 0x82,
+    0x83, 0x84, 0x85, 0x86, 0x87, 0x88, 0x89, 0x8a, 0x8b, 0x8c, 0x8d, 0x8e, 0x8f, 0x90, 0x91, 0x92,
+    0x93, 0x94, 0x95, 0x96, 0x97, 0x98, 0x99, 0x9a, 0x9b, 0x9c, 0x9d, 0x9e, 0x9f, 0xa0, 0xa1, 0xa2,
+    0xa3, 0xa4, 0xa5, 0xa6, 0xa7, 0xa8, 0xa9, 0xaa, 0xab, 0xac, 0xad, 0xae, 0xaf, 0xb0, 0xb1, 0xb2,
+    0xb3, 0xb4, 0xb5, 0xb6, 0xb7, 0xb8, 0xb9, 0xba, 0xbb, 0xbc, 0xbd, 0xbe, 0xbf, 0xc0, 0xc1, 0xc2,
+    0xc3, 0xc4, 0xc5, 0xc6, 0xc7, 0xc8, 0xc9, 0xca, 0xcb, 0xcc, 0xcd, 0xce, 0xcf, 0xd0, 0xd1, 0xd2,
+    0xd3, 0xd4, 0xd5, 0xd6, 0xd7, 0xd8, 0xd9, 0xda, 0xdb, 0xdc, 0xdd, 0xde, 0xdf, 0xe0, 0xe1, 0xe2,
+    0xe3, 0xe4, 0xe5, 0xe6, 0xe7, 0xe8, 0xe9, 0xea, 0xeb, 0xec, 0xed, 0xee, 0xef, 0xf0, 0xf1, 0xf2 );
 
 sub bocu1_to_utf8 {
     my $bocu1str = shift;
+    my @chars = unpack("C*", $bocu1str);
 
-    my @codepoints = &bocu1_to_codepoints($bocu1str);
+    my $pc = 0x40;
+    my @codepoints;
+    for (my $i=0; $i<=$#chars; $i++) {
+        my $lead = $chars[$i];
+        my $cp = 0;
+        my $diff = 0;
+        if ($lead <= 0x20) {
+            $cp = $lead;
+        } elsif ($lead == 0x21) { # 21 t1 t2 t3
+            my $t1 = $bocu1_byte_to_trail[$chars[++$i]];
+            my $t2 = $bocu1_byte_to_trail[$chars[++$i]];
+            my $t3 = $bocu1_byte_to_trail[$chars[++$i]];
+            croak "illegal trail char" if $t1 < 0 || $t2 < 0 || $t3 < 0;
+            $diff = 14161247 + $t1 * 59049 + $t2 * 243 + $t3
+        } elsif ($lead < 0x25) { # [22-24] t1 t2
+            my $t1 = $bocu1_byte_to_trail[$chars[++$i]];
+            my $t2 = $bocu1_byte_to_trail[$chars[++$i]];
+            croak "illegal trail char" if $t1 < 0 || $t2 < 0;
+            $diff = -2195326 + $lead * 59049 + $t1 * 243 + $t2;
+        } elsif ($lead < 0x50) { # [25-4F] t1
+            my $t1 = $bocu1_byte_to_trail[$chars[++$i]];
+            croak "illegal trail char" if $t1 < 0;
+            $diff = -19504 + $lead * 243 + $t1;
+        } elsif ($lead < 0xd0) { # [50-CF]
+            $diff = $lead - 0x90;
+        } elsif ($lead < 0xfb) { # [D0-FA] t1
+            my $t1 = $bocu1_byte_to_trail[$chars[++$i]];
+            croak "illegal trail char" if $t1 < 0;
+            $diff = -50480 + $lead * 243 + $t1;
+        } elsif ($lead < 0xfe) { # [FB-FD] t1 t2
+            my $t1 = $bocu1_byte_to_trail[$chars[++$i]];
+            my $t2 = $bocu1_byte_to_trail[$chars[++$i]];
+            croak "illegal trail char" if $t1 < 0 || $t2 < 0;
+            $diff = -14810786 + $lead * 59049 + $t1 * 243 + $t2;
+        } elsif ($lead == 0xfe) { # FE t1 t2 t3
+            my $t1 = $bocu1_byte_to_trail[$chars[++$i]];
+            my $t2 = $bocu1_byte_to_trail[$chars[++$i]];
+            my $t3 = $bocu1_byte_to_trail[$chars[++$i]];
+            croak "illegal trail char" if $t1 < 0 || $t2 < 0 || $t3 < 0;
+            $diff = 187660 + $t1 * 59049 + $t2 * 243 + $t3;
+        } elsif ($lead == 0xff) {
+            ## reset
+            $cp = 0;
+            $diff = 0;
+        }
+
+        # codepoint, next pc
+        if ($lead <= 0x20) {
+            $pc = 0x40 if ($lead < 0x20);
+            push(@codepoints,$lead);
+        } elsif ($lead < 0xff) {
+            $cp = $pc + $diff;
+            $cp = 0 if $cp < 0;
+            push(@codepoints,$cp);
+            if ($cp < 0x20) {
+                $pc = 0x40;
+            } elsif ($cp == 0x20) {
+                # keep pc
+            } elsif (0x3040 <= $cp && $cp <= 0x309f) {
+                $pc = 0x3070;
+            } elsif (0x4e00 <= $cp && $cp <= 0x9fa5) {
+                $pc = 0x7711;
+            } elsif (0xac00 <= $cp && $cp <= 0xd7a3) {
+                $pc = 0xc1d1;
+            } else {
+                $pc = ($cp & ~0x7f) + 0x40;
+            }
+        } else { # 0xff : reset
+            $pc = 0x40;
+        }
+    }
+
     my $utf8str = pack("U*", @codepoints);
-
     Encode::_utf8_on($utf8str);
-
     $utf8str;
+}
+
+sub utf8_to_bocu1 {
+    my $utf8str = shift;
+
+    my @chars = unpack("U*", $utf8str);
+    my $bocu1str = '*' x $#chars;
+    $bocu1str = '';
+    my $pc = 0x40;
+    for (my $i=0; $i<=$#chars; $i++) {
+        my $cp = $chars[$i];
+        next if $i == 0 && $cp == 0xfeff;
+
+        croak "unsupported codepoint (>0x1fffff)." if $cp > 0x001fffff;
+        # cp -> diff -> bocu1
+        if ($cp <= 0x20) {
+            $bocu1str .= chr($cp);
+            $pc = 0x40 unless $cp == 0x20;
+        } else {
+            my $diff = $cp - $pc;
+            my $b;
+            if ($diff < -187660) { # [...,-187660) : 21
+                $diff -= -14536567;
+                my $t3 = $diff % 243; $diff = int($diff / 243);
+                my $t2 = $diff % 243; $diff = int($diff / 243);
+                my $t1 = $diff % 243; $diff = int($diff / 243);
+#               my $t0 = $diff;
+                $b = pack("C4", 0x21, $bocu1_trail_to_byte[$t1], $bocu1_trail_to_byte[$t2], $bocu1_trail_to_byte[$t3]);
+            } elsif ($diff < -10513) { # [-187660,-10513) : 22-24
+                $diff -= -187660;
+                my $t2 = $diff % 243; $diff = int($diff / 243);
+                my $t1 = $diff % 243; $diff = int($diff / 243);
+                my $t0 = $diff;
+                $b = pack("C3", (0x22 + $t0), $bocu1_trail_to_byte[$t1], $bocu1_trail_to_byte[$t2]);
+            } elsif ($diff < -64) { # [-10513,-64) : 25-4F
+                $diff -= -10513;
+                my $t1 = $diff % 243; $diff = int($diff / 243);
+                my $t0 = $diff;
+                $b = pack("C2", (0x25 + $t0), $bocu1_trail_to_byte[$t1]);
+            } elsif ($diff < 64) { # [-64,63) : 50-CF
+                $diff -= -64;
+                my $t0 = $diff;
+                $b = pack("C", (0x50 + $t0));
+            } elsif ($diff < 10513) { # [64,10513) : D0-FA
+                $diff -= 64;
+                my $t1 = $diff % 243; $diff = int($diff / 243);
+                my $t0 = $diff;
+                $b = pack("C2", (0xd0 + $t0), $bocu1_trail_to_byte[$t1]);
+            } elsif ($diff < 187660) { # [10513,187660) : FB-FD
+                $diff -= 10513;
+                my $t2 = $diff % 243; $diff = int($diff / 243);
+                my $t1 = $diff % 243; $diff = int($diff / 243);
+                my $t0 = $diff;
+                $b = pack("C3", (0xfb + $t0), $bocu1_trail_to_byte[$t1], $bocu1_trail_to_byte[$t2]);
+            } else { # [187660,...) : FE
+                $diff -= 187660;
+                my $t3 = $diff % 243; $diff = int($diff / 243);
+                my $t2 = $diff % 243; $diff = int($diff / 243);
+                my $t1 = $diff % 243; $diff = int($diff / 243);
+#               my $t0 = $diff;
+                $b = pack("C4", 0xfe, $bocu1_trail_to_byte[$t1], $bocu1_trail_to_byte[$t2], $bocu1_trail_to_byte[$t3]);
+            }
+            $bocu1str .= $b;
+
+            # next pc
+            if (0x3040 <= $cp && $cp <= 0x309f) {
+                $pc = 0x3070;
+            } elsif (0x4e00 <= $cp && $cp <= 0x9fa5) {
+                $pc = 0x7711;
+            } elsif (0xac00 <= $cp && $cp <= 0xd7a3) {
+                $pc = 0xc1d1;
+            } else {
+                $pc = $cp & ~0x7f | 0x40;
+            }
+        }
+    }
+
+    $bocu1str;
 }
 
 1;
@@ -433,34 +248,31 @@ Encode::BOCU1 -- encodes / decodes BOCU-1 string, works as part of Encode.pm
 
 use Encode::BOCU1;
 
-$string = 'Some UTF-8 text to convert'
+$string = 'Some text to convert... in UTF-8'
 Encode::from_to($string,'utf8','bocu1');
 Encode::from_to($string,'bocu1','shiftjis');
 
 =head1 DESCRIPTION
 
 BOCU-1 is a MIME-compatible application of the Binary Ordered Compression for Unicode
-[BOCU] base algorithm developed and patented by IBM.
+[BOCU] base algorithm.
+http://www.unicode.org/notes/tn6/
+http://icu.sourceforge.net/docs/papers/binary_ordered_compression_for_unicode.html
 
 Encode::BOCU1 enables to convert any encoding systems supported by Encode.pm
 from/to BOCU-1 through UTF-8.
 
-=head1 SEE ALSO
-
-http://www.unicode.org/notes/tn6/
-http://icu.sourceforge.net/docs/papers/binary_ordered_compression_for_unicode.html
-
 =head1 COPYRIGHT AND LICENSE
 
-This is pure-perl port of "BOCU-1 Sample C Code" written by Markus W. Scherer on 2002jan24,
-available from http://www.unicode.org/notes/tn6/.
+Copyright (C) 2006 Naoya Tozuka E<lt>naoyat@naochan.comE<gt>
 
-Ported by Naoya Tozuka E<lt>naoyat@naochan.comE<gt>
+Based on pure-perl port of "Sample C Sources" on http://www.unicode.org/notes/tn6/.
+"Sample C Sources" are licensed under the X license (ICU version).
+This module is licensed under the same license.
 
-As with the original C code, this port is licensed under the X license (ICU version).
-ICU License : http://dev.icu-project.org/cgi-bin/viewcvs.cgi/*checkout*/icu/license.html
-
-BOCU "Binary-Ordered Compression For Unicode" is a patent-protected technology of IBM.
+BOCU ("Binary-Ordered Compression For Unicode") is patent-protected technology of IBM.
 (US Patent 6737994)
+
+ICU License : http://dev.icu-project.org/cgi-bin/viewcvs.cgi/*checkout*/icu/license.html
 
 =cut

@@ -1,7 +1,7 @@
 Encode-BOCU1
 ============
 
-   Version 0.01 - 29 June 2006
+   Version 0.02 - 03 July 2006
 
    Encode::BOCU1 is a Perl module for encoding / decoding BOCU-1 string.
    Works as part of Encode.pm.
@@ -28,13 +28,14 @@ no dependencies
 
 COPYRIGHT AND LICENCE
 
-This is pure-perl port of "BOCU-1 Sample C Code" on http://www.unicode.org/notes/tn6/
+Based on pure-perl port of "Sample C Sources" on http://www.unicode.org/notes/tn6/,
 written by Markus W. Scherer on 2002jan24 and licensed under the X license (ICU version).
 
-Ported by Naoya Tozuka <naoyat@naochan.com>
+Ported and modified by Naoya Tozuka <naoyat@naochan.com>
 
 As with the original C code, this port is licensed under the X license (ICU version).
 ICU License : http://dev.icu-project.org/cgi-bin/viewcvs.cgi/*checkout*/icu/license.html
 
-BOCU "Binary-Ordered Compression For Unicode" is a patent-protected technology of IBM.
+BOCU ("Binary-Ordered Compression For Unicode") is patent-protected technology of IBM.
 (US Patent 6737994)
+
