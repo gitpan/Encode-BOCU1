@@ -7,7 +7,7 @@ use Carp;
 
 use base qw(Encode::Encoding);
 
-our $VERSION = '0.02';
+our $VERSION = '0.03';
 
 __PACKAGE__->Define('bocu1');
 
@@ -256,23 +256,30 @@ Encode::from_to($string,'bocu1','shiftjis');
 
 BOCU-1 is a MIME-compatible application of the Binary Ordered Compression for Unicode
 [BOCU] base algorithm.
-http://www.unicode.org/notes/tn6/
-http://icu.sourceforge.net/docs/papers/binary_ordered_compression_for_unicode.html
 
 Encode::BOCU1 enables to convert any encoding systems supported by Encode.pm
 from/to BOCU-1 through UTF-8.
 
+=head1 SEE ALSO
+
+http://www.unicode.org/notes/tn6/
+http://icu.sourceforge.net/docs/papers/binary_ordered_compression_for_unicode.html
+
 =head1 COPYRIGHT AND LICENSE
 
-Copyright (C) 2006 Naoya Tozuka E<lt>naoyat@naochan.comE<gt>
+Based on pure-perl port of "Sample C Code" on http://www.unicode.org/notes/tn6/,
+written by Markus W. Scherer on 2002jan24 and is
 
-Based on pure-perl port of "Sample C Sources" on http://www.unicode.org/notes/tn6/.
-"Sample C Sources" are licensed under the X license (ICU version).
-This module is licensed under the same license.
+Copyright (C) 2002, International Business Machines Corporation and others.
+All Rights Reserved.
 
-BOCU ("Binary-Ordered Compression For Unicode") is patent-protected technology of IBM.
+The "Sample C Code" is under the X license (ICU version).
+ICU License : http://dev.icu-project.org/cgi-bin/viewcvs.cgi/*checkout*/icu/license.html
+
+BOCU "Binary-Ordered Compression For Unicode" is a patent-protected technology of IBM.
 (US Patent 6737994)
 
-ICU License : http://dev.icu-project.org/cgi-bin/viewcvs.cgi/*checkout*/icu/license.html
+Ported and modified by Naoya Tozuka E<lt>naoyat@naochan.comE<gt>
+As with the original C code, this port is licensed under the X license (ICU version).
 
 =cut
